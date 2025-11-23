@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop - Horror</title>
+<style>
+  body{font-family:Arial;margin:0;background:#f5f5f5;padding:12px}
+  header{background:#b71c1c;color:#fff;padding:12px;text-align:center}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:12px}
+  .card{background:#fff;padding:10px;border-radius:8px}
+  .card img{width:100%;height:160px;object-fit:cover;border-radius:6px}
+  select,input{padding:8px}
+  a{color:#111;text-decoration:none}
+</style>
+</head>
+<body>
+<header><h2 style="margin:0">Shop</h2></header>
+<div style="max-width:1000px;margin:12px auto">
+  <div style="display:flex;gap:8px;align-items:center;justify-content:space-between">
+    <div>
+      <label>Kategori</label>
+      <select id="kategoriSel"><option value="">Semua</option></select>
+    </div>
+    <div>
+      <input id="search" placeholder="Cari nama produk...">
+    </div>
+  </div>
+
+  <div id="grid" class="grid">Loading...</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDKZlCOgSliF6doVyCF46inqrHf9C_9FhU",
+  authDomain: "horror-b09d2.firebaseapp.com",
+  projectId: "horror-b09d2",
+  storageBucket: "horror-b09d2.firebasestorage.app",
+  messagingSenderId: "636634426334",
+  appId: "1:636634426334:web:b8d5ad069be30ac7be8b4f",
+  measurementId: "G-ZHF9H692FM"
+};
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  async function loadCategories(){
+    const sel = document.getElementById('kategoriSel');
+    sel.innerHTML = '<option value="">Semua</option>';
+    const snap = await db.collection('tb_kategori').get();
+    snap.forEach(doc=>{
+      const opt = document.createElement('option');
+      opt.value = doc.id;
+      opt.textContent = doc.data().nama_kategori;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', ()=> loadProducts());
+  }
+
+  async function loadProducts(){
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    const cat = document.getElementById('kategoriSel').value;
+    const qText = document.getElementById('search').value.trim().toLowerCase();
+    let q = db.collection('tb_produk').where('status','==','aktif');
+    if(cat) q = q.where('kategori_id','==',cat);
+    const snap = await q.get();
+    if(snap.empty){ grid.innerHTML = '<p>Tidak ada produk</p>'; return; }
+    snap.forEach(doc=>{
+      const d = doc.data();
+      if(qText && !d.nama.toLowerCase().includes(qText)) return;
+      const div = document.createElement('div'); div.className='card';
+      div.innerHTML = `<img src="${d.gambar_thumb||''}"><h3>${d.nama}</h3><p>Rp ${Number(d.harga||0).toLocaleString()}</p><a href="product.html?id=${doc.id}">Detail</a>`;
+      grid.appendChild(div);
+    });
+  }
+
+  document.getElementById('search').addEventListener('input', loadProducts);
+  loadCategories().then(loadProducts);
+</script>
+</body>
+</html>

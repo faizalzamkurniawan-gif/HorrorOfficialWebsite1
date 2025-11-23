@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="id">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Detail Produk</title>
+<style>body{font-family:Arial;padding:12px;background:#f5f5f5} img{max-width:100%;height:auto;border-radius:8px}</style>
+</head>
+<body>
+<div style="max-width:900px;margin:0 auto;background:#fff;padding:12px;border-radius:8px">
+  <div id="content">Loading...</div>
+  <p><a href="shop.html">Kembali ke Shop</a></p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDKZlCOgSliF6doVyCF46inqrHf9C_9FhU",
+  authDomain: "horror-b09d2.firebaseapp.com",
+  projectId: "horror-b09d2",
+  storageBucket: "horror-b09d2.firebasestorage.app",
+  messagingSenderId: "636634426334",
+  appId: "1:636634426334:web:b8d5ad069be30ac7be8b4f",
+  measurementId: "G-ZHF9H692FM"
+};
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function q(n){ return new URLSearchParams(location.search).get(n); }
+  const id = q('id');
+  if(!id){ document.getElementById('content').innerText='ID produk tidak ditemukan'; }
+  else showProduct(id);
+
+  async function showProduct(id){
+    const doc = await db.collection('tb_produk').doc(id).get();
+    if(!doc.exists){ document.getElementById('content').innerText='Produk tidak ditemukan'; return; }
+    const d = doc.data();
+    document.getElementById('content').innerHTML = `
+      <h1>${d.nama}</h1>
+      <p>Rp ${Number(d.harga||0).toLocaleString()}</p>
+      <p>Status: ${d.status}</p>
+      <img src="${d.gambar_detail || d.gambar_thumb || ''}" alt="${d.nama}">
+      <p>${d.deskripsi || ''}</p>
+    `;
+  }
+</script>
+</body>
+</html>
