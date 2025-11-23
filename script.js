@@ -1,242 +1,69 @@
-/* ==========================
-   PAGE DETECTION
-========================== */
-const page = window.location.pathname;
+// FINAL script.js integrated with Firebase import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js"; import { getFirestore, collection, getDocs, getDoc, query, orderBy, doc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-/* ==========================
-   HEADER + CART + LOGIN (UNTUK SEMUA HALAMAN)
-========================== */
-const header = document.getElementById('siteHeader');
+// Firebase Config const firebaseConfig = { apiKey: "AIzaSyDKZlCOgSliF6doVyCF46inqrHf9C_9FhU", authDomain: "horror-b09d2.firebaseapp.com", projectId: "horror-b09d2", storageBucket: "horror-b09d2.appspot.com", messagingSenderId: "636634426334", appId: "1:636634426334:web:b8d5ad069be30ac7be8b4f", measurementId: "G-ZHF9H692FM" };
 
-if (header) {
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) header.classList.add('scrolled');
-    else header.classList.remove('scrolled');
-  });
+const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+
+/* ================= LOAD PRODUCT FIREBASE ================= */ let productData = [];
+
+async function loadProductsFromFirestore(){ const q = query(collection(db,'produk'), orderBy('createdAt','desc')); const snap = await getDocs(q);
+
+productData = []; for (const d of snap.docs){ const id = d.id; const prod = d.data();
+
+const detailSnap = await getDoc(doc(db,'detail_produk', id));
+const detail = detailSnap.exists() ? detailSnap.data() : {};
+
+productData.push({ id, ...prod, detail });
+
 }
 
-const cartIcon = document.getElementById("cartIcon");
-const cartSidebar = document.getElementById("cartSidebar");
+renderProducts(productData); }
 
-if (cartIcon && cartSidebar) {
-  cartIcon.onclick = () => {
-    cartSidebar.classList.add("show");
-  };
+/* ================= RENDER PRODUCT GRID ================= */ function renderProducts(list){ const grid = document.getElementById('grid'); grid.innerHTML = "";
 
-  document.addEventListener("click", (e) => {
-    if (cartSidebar.classList.contains("show")) {
-      if (!cartSidebar.contains(e.target) && !e.target.closest("#cartIcon")) {
-        cartSidebar.classList.remove("show");
-      }
-    }
-  });
+list.forEach(prod =>{ let statusBadge = "";
+
+if (prod.status === "habis") {
+  statusBadge = `<div class='badge soldout'>SOLD OUT</div>`;
+} else if (prod.status === "menipis") {
+  statusBadge = `<div class='badge low'>STOK MENIPIS</div>`;
+} else if (prod.status === "release") {
+  statusBadge = `<div class='badge release'>RELEASE ON<br>${prod.tanggal}</div>`;
+} else if (prod.status === "resale") {
+  statusBadge = `<div class='badge resale'>RESALE ON<br>${prod.tanggal}</div>`;
 }
 
-const btnUser = document.getElementById("btn-user");
-const loginOverlay = document.getElementById("login-overlay");
-const loginCard = document.getElementById("login-card");
+let whiten = prod.status === "habis" ? "filter:brightness(40%);" : "";
 
-if (btnUser && loginOverlay && loginCard) {
-  btnUser.onclick = () => {
-    loginOverlay.style.display = "block";
-    loginCard.style.display = "flex";
-    loginCard.style.transform = "translate(-50%,-50%) scale(1)";
-  };
+let div = document.createElement("div");
+div.className = "product";
+div.innerHTML = `
+  <div class='product-img-wrapper'>${statusBadge}<img src='${prod.gambar}' style='${whiten}'></div>
+  <h4>${prod.nama}</h4>
+  <p>Rp ${Number(prod.harga).toLocaleString('id-ID')}</p>
+`;
 
-  loginOverlay.onclick = () => {
-    loginOverlay.style.display = "none";
-    loginCard.style.display = "none";
-  };
-}
+div.addEventListener('click', ()=> openDetail(prod));
+grid.appendChild(div);
 
-/* ==========================
-   INDEX PAGE (SLIDER)
-========================== */
-if (page.includes("index.html")) {
+}); }
 
-  const slides = document.querySelector('.slides');
-  const prevBtn = document.querySelector('.prev');
-  const nextBtn = document.querySelector('.next');
+/* ================= FILTER ================= */ window.filterCategory = function(cat){ if(cat === 'all') renderProducts(productData); else renderProducts(productData.filter(p => p.kategori === cat)); }
 
-  if (slides && prevBtn && nextBtn) {
+/* ================= SORT ================= */ window.sortProducts = function(type){ let sorted = [...productData]; if(type === 'termurah') sorted.sort((a,b)=> a.harga - b.harga); if(type === 'termahal') sorted.sort((a,b)=> b.harga - a.harga); renderProducts(sorted); }
 
-    let activeSet = [];
-    let index = 1;
-    let autoSlide;
+/* ================= DETAIL PRODUK ================= */ function openDetail(prod){ const sheet = document.getElementById('sheet'); const overlay = document.getElementById('overlay'); const carousel = document.getElementById('carousel-produk');
 
-    function updateActiveSet() {
-      activeSet = Array.from(document.querySelectorAll(
-        window.innerWidth <= 768 ? '.mobile' : '.desktop'
-      ));
-      slides.style.transition = 'none';
-      index = 1;
-      slides.style.transform = `translateX(${-index * 100}%)`;
-      resetAutoSlide();
-    }
+carousel.innerHTML = ""; prod.detail.gambar.forEach(src =>{ let img = document.createElement("img"); img.src = src; carousel.appendChild(img); });
 
-    function moveSlide(direction) {
-      index += direction;
-      slides.style.transition = 'transform 0.6s ease-in-out';
-      slides.style.transform = `translateX(${-index * 100}%)`;
-    }
+document.getElementById('detailNama').textContent = prod.nama; document.getElementById('detailHarga').textContent = Number(prod.harga).toLocaleString('id-ID');
 
-    slides.addEventListener('transitionend', () => {
-      const lastIndex = activeSet.length - 2;
+// tombol beli const btn = document.querySelector('#sheet button'); if (prod.status === "habis" || prod.status === "release" || prod.status === "resale"){ btn.style.background = '#999'; btn.style.pointerEvents = 'none'; } else { btn.style.background = '#9d001c'; btn.style.pointerEvents = 'auto'; }
 
-      if (activeSet[index].classList.contains('clone-start')) {
-        slides.style.transition = 'none';
-        index = 1;
-        slides.style.transform = `translateX(${-index * 100}%)`;
-      }
-      if (activeSet[index].classList.contains('clone-end')) {
-        slides.style.transition = 'none';
-        index = lastIndex;
-        slides.style.transform = `translateX(${-index * 100}%)`;
-      }
-    });
+sheet.classList.add('show'); overlay.classList.add('show'); }
 
-    nextBtn.addEventListener('click', () => {
-      moveSlide(1);
-      resetAutoSlide();
-    });
-    prevBtn.addEventListener('click', () => {
-      moveSlide(-1);
-      resetAutoSlide();
-    });
+/* ================= CLOSE DETAIL ================= */ document.getElementById('close-btn').onclick = () =>{ sheet.classList.remove('show'); overlay.classList.remove('show'); }
 
-    // SWIPE HP
-    let startX = 0;
-    slides.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-    slides.addEventListener('touchend', e => {
-      const diff = startX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 50) {
-        moveSlide(diff > 0 ? 1 : -1);
-        resetAutoSlide();
-      }
-    });
+document.getElementById('overlay').onclick = () =>{ sheet.classList.remove('show'); overlay.classList.remove('show'); }
 
-    function resetAutoSlide() {
-      clearInterval(autoSlide);
-      autoSlide = setInterval(() => moveSlide(1), 5000);
-    }
-
-    window.addEventListener('resize', updateActiveSet);
-    updateActiveSet();
-  }
-}
-
-/* ==========================
-   SHOP PAGE (PRODUCT LIST + DETAIL)
-========================== */
-if (page.includes("shop.html")) {
-
-  // --- Firestore dynamic loader (letakkan di awal file shop.html script) ---
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
-import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDKZlCOgSliF6doVyCF46inqrHf9C_9FhU",
-  authDomain: "horror-b09d2.firebaseapp.com",
-  projectId: "horror-b09d2",
-  storageBucket: "horror-b09d2.appspot.com",
-  messagingSenderId: "636634426334",
-  appId: "1:636634426334:web:b8d5ad069be30ac7be8b4f",
-  measurementId: "G-ZHF9H692FM"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-let productData = [];
-async function loadProductsFromFirestore(){
-  const q = query(collection(db,'produk'), orderBy('createdAt','desc'));
-  const snap = await getDocs(q);
-  productData = [];
-  for(const docSnap of snap.docs){
-    const id = docSnap.id;
-    const data = docSnap.data();
-    // fetch detail
-    const dSnap = await getDoc(doc(db,'detail_produk', id));
-    const detail = dSnap.exists() ? dSnap.data() : {};
-    productData.push({ id, ...data, detail });
-  }
-  renderProducts(productData);
-}
-
-// call loadProductsFromFirestore() instead of renderProducts(productData) at end of shop init
-
-  /* DOM */
-  const grid = document.getElementById('grid');
-  const sheet = document.getElementById('sheet');
-  const overlay = document.getElementById('overlay');
-  const closeBtn = document.getElementById('close-btn');
-  const carousel = document.getElementById('carousel-produk');
-  const detailNama = document.getElementById('detailNama');
-  const detailHarga = document.getElementById('detailHarga');
-
-  /* LIST PRODUK */
-  function renderProducts(list){
-    if (!grid) return;
-    grid.innerHTML = "";
-    list.forEach(prod => {
-      let div = document.createElement("div");
-      div.className = "product";
-      div.innerHTML = `
-        <img src="${prod.img}">
-        <h4>${prod.nama}</h4>
-        <p>Rp ${prod.harga.toLocaleString('id-ID')}</p>
-      `;
-      div.addEventListener('click', () => openDetail(prod));
-      grid.appendChild(div);
-    });
-  }
-
-  /* FILTER */
-  window.filterCategory = function(cat){
-    if(cat === 'all'){
-      renderProducts(productData);
-    } else {
-      renderProducts(productData.filter(p => p.kategori === cat));
-    }
-  }
-
-  /* SORT */
-  window.sortProducts = function(type){
-    let sorted = [...productData];
-    if(type === 'termurah') sorted.sort((a,b)=>a.harga - b.harga);
-    if(type === 'termahal') sorted.sort((a,b)=>b.harga - a.harga);
-    renderProducts(sorted);
-  }
-
-  /* DETAIL PRODUK */
-  function openDetail(prod){
-    if (!sheet || !overlay || !carousel) return;
-
-    carousel.innerHTML = "";
-    prod.imgs.forEach(src => {
-      let img = document.createElement("img");
-      img.src = src;
-      carousel.appendChild(img);
-    });
-
-    detailNama.textContent = prod.nama;
-    detailHarga.textContent = prod.harga.toLocaleString('id-ID');
-
-    sheet.classList.add('show');
-    overlay.classList.add('show');
-  }
-
-  /* CLOSE DETAIL */
-  if (closeBtn && overlay) {
-    closeBtn.addEventListener('click', () => {
-      sheet.classList.remove('show');
-      overlay.classList.remove('show');
-    });
-    overlay.addEventListener('click', () => {
-      sheet.classList.remove('show');
-      overlay.classList.remove('show');
-    });
-  }
-
-  /* LOAD AWAL */
-  renderProducts(productData);
-}
+/* ================= LOAD FIREBASE ================= */ loadProductsFromFirestore();
