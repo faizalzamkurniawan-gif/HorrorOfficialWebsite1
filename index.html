@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>HORROR OFFICIAL</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import { getFirestore, collection, query, orderBy, getDocs } 
+  from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDKZlCOgSliF6doVyCF46inqrHf9C_9FhU",
+  authDomain: "horror-b09d2.firebaseapp.com",
+  projectId: "horror-b09d2",
+  storageBucket: "horror-b09d2.firebasestorage.app",
+  messagingSenderId: "636634426334",
+  appId: "1:636634426334:web:b8d5ad069be30ac7be8b4f",
+  measurementId: "G-ZHF9H692FM"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Ambil banner dari Firestore
+async function loadBanner() {
+  const q = query(collection(db, "banner"), orderBy("order", "asc"));
+  const snap = await getDocs(q);
+
+  const slides = document.querySelector(".slides");
+  slides.innerHTML = ""; // Hapus gambar lama dulu
+
+  snap.forEach(doc => {
+    let img = document.createElement("img");
+    img.src = doc.data().url;
+    img.className = "mobile"; // kamu bisa pakai class desktop/mobile sesuai kebutuhan
+    slides.appendChild(img);
+  });
+
+  // Tambahkan clone-start / clone-end supaya slider tetap looping
+  // (Diperlukan karena slider kamu pakai teknik clone)
+  if (snap.docs.length > 0) {
+    let first = snap.docs[0].data().url;
+    let last = snap.docs[snap.docs.length - 1].data().url;
+
+    let cloneEnd = document.createElement("img");
+    cloneEnd.src = last;
+    cloneEnd.classList.add("mobile", "clone-end");
+
+    let cloneStart = document.createElement("img");
+    cloneStart.src = first;
+    cloneStart.classList.add("mobile", "clone-start");
+
+    slides.prepend(cloneEnd);
+    slides.append(cloneStart);
+  }
+}
+
+loadBanner();
+</script>
+</head>
+<body>
+  <header class="site-header" id="siteHeader" aria-label="Header utama">
+    <div class="header-kiri">
+      <a href="#" class="brand">
+        <img src="logo1.png" alt="Logo putih" class="logo-light">
+        <img src="logo2.png" alt="Logo hitam" class="logo-dark">
+      </a>
+    </div>
+    <div class="header-jarak" aria-hidden="true"></div>
+    <nav class="header-kanan">
+      <button class="icon-btn" aria-label="Keranjang" title="Keranjang" id="cartIcon">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M7 4h-2l-1 2h2l3.6 7.59-1.35 2.44A1 1 0 0011 18h7v-2H11.42a.25.25 0 01-.23-.15L12.1 14h5.45a1 1 0 00.93-.62L21 7H6.21L5.27 4H7zM7 20a2 2 0 11.001-3.999A2 2 0 017 20zm10 0a2 2 0 11.001-3.999A2 2 0 0117 20z"></path>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-user" aria-label="Profil" title="Profil">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 12a5 5 0 10-5-5 5 5 0 005 5zm0 2c-4 0-7 2-7 4v2h14v-2c0-2-3-4-7-4z"></path>
+        </svg>
+      </button>
+    </nav>
+    
+  </header>
+  <div id="cartSidebar">
+     <h4>KERANJANG</h4>
+     <p>Keranjang anda kosong.</p>
+  </div>
+  <div id="login-overlay"></div>
+  <div id="login-card">
+    <h2>Login</h2>
+    <input type="text" placeholder="Username" id="username">
+    <input type="password" placeholder="Password" id="password">
+    <button id="login-submit">Login</button>
+</div>
+  <section class="carousel">
+  <div class="slides">
+  </div>
+  <button class="prev">❮</button>
+  <button class="next">❯</button>
+  <div class="carousel-center">
+    <h3 class="carousel-title">HORROR Official</h3>
+    <a href="shop.html" class="carousel-btn">BUY NOW</a>
+  </div>
+</section>
+
+<section class="about-us">
+  <div class="footer-container"><div class="footer-section">
+  <h3>Tentang Kami</h3>
+  <p>Horror adalah brand yang menyediakan beberapa produk pakaian dan aksesoris ghoib/tanpa ada barang,pabrik,kantor,dan karyawan.</p>
+</div>
+
+<div class="footer-section">
+  <h3>Alamat</h3>
+  <p>Karangmalang Wetan,<br>Kec.Kangkung,<br>Kab.Kendal<br>Jawa Tengah,<br>Indonesia</p>
+</div>
+
+<div class="footer-section">
+  <h3>Sosial Media</h3>
+  <div class="social-links">
+    <a href="https://www.tiktok.com/@cihuyyyyy871?_r=1&_t=ZS-91QukFV2xJE" >
+      <img src="tt.png" alt="TikTok" />
+    </a>
+    <a href="https://www.instagram.com/akunmu" target="_blank">
+      <img src="ig.svg" alt="Instagram"/>
+    </a>
+  </div>
+</div>
+
+  </div>
+</section>
+<script src="script.js"></script>
+</body>
+</html>

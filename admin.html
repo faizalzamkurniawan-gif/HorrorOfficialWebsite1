@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - HORROR</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#111;color:#fff;padding:20px}
+    .card{background:#121212;padding:16px;border-radius:8px;margin-bottom:12px}
+    input,select,button,textarea{display:block;width:100%;padding:8px;margin-top:8px;border-radius:6px;border:1px solid #333;background:#0f0f10;color:#fff}
+    label{margin-top:12px;font-weight:600}
+    .row{display:flex;gap:8px}
+    .row > *{flex:1}
+    .small{width:130px}
+  </style>
+</head>
+<body>
+  <h1>Admin Panel - HORROR</h1>
+
+  <div id="loginCard" class="card">
+    <h2>Login sederhana</h2>
+    <input id="adminUser" placeholder="username" />
+    <input id="adminPass" placeholder="password" type="password" />
+    <button id="adminLogin">Login</button>
+    <p style="color:#aaa;font-size:13px">Credentials: owner / horror123</p>
+  </div>
+
+  <div id="panel" style="display:none">
+    <div class="card">
+      <h3>Banner carousel (3 gambar)</h3>
+      <input type="file" id="banner1" accept="image/*" />
+      <input type="file" id="banner2" accept="image/*" />
+      <input type="file" id="banner3" accept="image/*" />
+      <button id="uploadBanners">Upload & Simpan Banner</button>
+    </div>
+
+    <div class="card">
+      <h3>Tambah Produk</h3>
+      <label>Nama produk</label>
+      <input id="p_nama" />
+      <label>Harga (angka)</label>
+      <input id="p_harga" type="number" />
+      <label>Kategori</label>
+      <input id="p_kategori" />
+      <label>Gambar utama</label>
+      <input type="file" id="p_gambar" accept="image/*" />
+      <label>Carousel images (boleh 1-3) — pisah pilih</label>
+      <input type="file" id="p_imgs" accept="image/*" multiple />
+      <label>Status</label>
+      <select id="p_status">
+        <option value="ada">ada</option>
+        <option value="menipis">stok menipis</option>
+        <option value="habis">habis</option>
+        <option value="release">release</option>
+        <option value="resale">resale</option>
+      </select>
+      <label>Tanggal release/resale (YYYY-MM-DD) — kosongkan jika tidak ada</label>
+      <input id="p_tanggal" placeholder="2025-12-01" />
+      <label>Stok ukuran (S,M,L,XL) - tulis angka tiap ukuran</label>
+      <div class="row">
+        <input id="stokS" placeholder="S" />
+        <input id="stokM" placeholder="M" />
+        <input id="stokL" placeholder="L" />
+        <input id="stokXL" placeholder="XL" />
+      </div>
+      <button id="addProduct">Tambah Produk</button>
+    </div>
+
+    <div class="card">
+      <h3>Daftar Produk (Hapus / Edit nanti)</h3>
+      <div id="productList"></div>
+    </div>
+
+    <div class="card">
+      <h3>Logout</h3>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (modular) via CDN -->
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
