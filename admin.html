@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin - Horror</title>
+<style>
+  body{font-family:Arial;background:#f5f5f5;padding:12px}
+  .card{background:#fff;padding:12px;border-radius:8px;max-width:900px;margin:12px auto}
+  input,select,textarea,button{display:block;width:100%;padding:8px;margin:6px 0}
+  .row{display:flex;gap:8px}
+  .row > *{flex:1}
+  .small{width:120px}
+</style>
+</head>
+<body>
+<div class="card" id="loginCard">
+  <h3>Login Owner</h3>
+  <input id="username" placeholder="username">
+  <input id="password" placeholder="password" type="password">
+  <button id="btnLogin">Login</button>
+  <p id="msg" style="color:#b71c1c"></p>
+</div>
+
+<div class="card" id="adminArea" style="display:none">
+  <h3>Tambah Kategori</h3>
+  <input id="catName" placeholder="Nama kategori"><button id="addCat">Tambah Kategori</button>
+  <div id="catList"></div>
+
+  <hr>
+  <h3>Tambah Banner (upload)</h3>
+  <input type="file" id="bannerFile"><input id="bannerOrder" placeholder="urutan (angka)">
+  <button id="uploadBanner">Upload Banner</button>
+  <div id="bannerList"></div>
+
+  <hr>
+  <h3>Tambah Produk (upload gambar otomatis)</h3>
+  <input id="pNama" placeholder="Nama produk">
+  <select id="pKategori"><option value="">Pilih kategori</option></select>
+  <input id="pHarga" placeholder="Harga (angka)">
+  <select id="pStatus"><option value="aktif">aktif</option><option value="non-aktif">non-aktif</option></select>
+  <textarea id="pDesc" placeholder="Deskripsi"></textarea>
+  <label>Thumbnail</label><input type="file" id="thumbFile">
+  <label>Gambar detail</label><input type="file" id="detailFile">
+  <button id="addProd">Tambah Produk</button>
+
+  <hr>
+  <h3>Daftar Produk</h3>
+  <div id="prodList"></div>
+  <button id="btnLogout">Logout</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<script>
+  // === GANTI dengan firebaseConfig milikmu
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDKZlCOgSliF6doVyCF46inqrHf9C_9FhU",
+  authDomain: "horror-b09d2.firebaseapp.com",
+  projectId: "horror-b09d2",
+  storageBucket: "horror-b09d2.appspot.com",
+  messagingSenderId: "636634426334",
+  appId: "1:636634426334:web:b8d5ad069be30ac7be8b4f",
+  measurementId: "G-ZHF9H692FM"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+  // login owner (cocokkan tb_owner)
+  document.getElementById('btnLogin').addEventListener('click', async ()=>{
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value;
+    if(!u||!p){ document.getElementById('msg').innerText='Isi username & password'; return; }
+    const q = await db.collection('tb_owner').where('username','==',u).where('password','==',p).get();
+    if(q.empty){ document.getElementById('msg').innerText='Login gagal'; return; }
+    document.getElementById('loginCard').style.display='none';
+    document.getElementById('adminArea').style.display='block';
+    loadCategories(); loadProducts(); loadBanners();
+  });
+
+  document.getElementById('btnLogout').addEventListener('click', ()=>{
+    document.getElementById('loginCard').style.display='block';
+    document.getElementById('adminArea').style.display='none';
+  });
+
+  // kategori
+  document.getElementById('addCat').addEventListener('click', async ()=>{
+    const name = document.getElementById('catName').value.trim();
+    if(!name) return alert('isi nama kategori');
+    await db.collection('tb_kategori').add({nama_kategori:name});
+    document.getElementById('catName').value='';
+    loadCategories();
+  });
+
+  async function loadCategories(){
+    const sel = document.getElementById('pKategori');
+    sel.innerHTML = '<option value="">Pilih kategori</option>';
+    const list = document.getElementById('catList'); list.innerHTML='';
+    const snap = await db.collection('tb_kategori').get();
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = d.nama_kategori;
+      sel.appendChild(opt);
+      const div = document.createElement('div');
+      div.innerHTML = `${doc.id} - ${d.nama_kategori} <button onclick="delCat('${doc.id}')">hapus</button>`;
+      list.appendChild(div);
+    });
+  }
+  window.delCat = async id => { if(confirm('hapus kategori?')){ await db.collection('tb_kategori').doc(id).delete(); loadCategories(); } };
+
+  // banner upload
+  document.getElementById('uploadBanner').addEventListener('click', async ()=>{
+    const file = document.getElementById('bannerFile').files[0];
+    const ur = document.getElementById('bannerOrder').value || 0;
+    if(!file) return alert('pilih file banner');
+    const path = `banners/${Date.now()}_${file.name}`;
+    const ref = storage.ref(path);
+    const snap = await ref.put(file);
+    const url = await snap.ref.getDownloadURL();
+    await db.collection('tb_banner').add({gambar_url:url, urutan: Number(ur)});
+    document.getElementById('bannerFile').value=''; document.getElementById('bannerOrder').value='';
+    loadBanners();
+  });
+
+  async function loadBanners(){
+    const out = document.getElementById('bannerList'); out.innerHTML='<h4>Banner</h4>';
+    const snap = await db.collection('tb_banner').orderBy('urutan','asc').get();
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const div = document.createElement('div');
+      div.innerHTML = `<img src="${d.gambar_url}" style="height:60px;vertical-align:middle"> ${doc.id} - urut:${d.urutan} <button onclick="delBanner('${doc.id}')">hapus</button>`;
+      out.appendChild(div);
+    });
+  }
+  window.delBanner = async id => { if(confirm('hapus banner?')){ await db.collection('tb_banner').doc(id).delete(); loadBanners(); } };
+
+  // produk: upload thumb & detail lalu simpan doc produk
+  document.getElementById('addProd').addEventListener('click', async ()=>{
+    const nama = document.getElementById('pNama').value.trim();
+    const kategori = document.getElementById('pKategori').value;
+    const harga = Number(document.getElementById('pHarga').value) || 0;
+    const status = document.getElementById('pStatus').value;
+    const deskripsi = document.getElementById('pDesc').value || '';
+    const thumbFile = document.getElementById('thumbFile').files[0];
+    const detailFile = document.getElementById('detailFile').files[0];
+    if(!nama || !kategori) return alert('isi nama & pilih kategori');
+
+    // upload helper
+    async function uploadFile(file, folder){
+      if(!file) return '';
+      const path = `${folder}/${Date.now()}_${file.name}`;
+      const ref = storage.ref(path);
+      const snap = await ref.put(file);
+      return await snap.ref.getDownloadURL();
+    }
+
+    const thumbUrl = await uploadFile(thumbFile,'thumbs');
+    const detailUrl = await uploadFile(detailFile,'details');
+
+    await db.collection('tb_produk').add({
+      nama, kategori_id:kategori, harga, status, deskripsi,
+      gambar_thumb: thumbUrl, gambar_detail: detailUrl
+    });
+
+    // clear form
+    document.getElementById('pNama').value=''; document.getElementById('pHarga').value='';
+    document.getElementById('pDesc').value=''; document.getElementById('thumbFile').value=''; document.getElementById('detailFile').value='';
+    loadProducts();
+  });
+
+  async function loadProducts(){
+    const out = document.getElementById('prodList'); out.innerHTML='';
+    const snap = await db.collection('tb_produk').get();
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const div = document.createElement('div');
+      div.innerHTML = `<img src="${d.gambar_thumb||''}" style="height:60px;vertical-align:middle"> ${doc.id} - ${d.nama} - Rp ${Number(d.harga||0).toLocaleString()} <button onclick="delProd('${doc.id}')">hapus</button>`;
+      out.appendChild(div);
+    });
+  }
+  window.delProd = async id => { if(confirm('hapus produk?')){ await db.collection('tb_produk').doc(id).delete(); loadProducts(); } };
+
+</script>
+</body>
+</html>
